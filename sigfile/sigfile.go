@@ -1,6 +1,9 @@
 package sigfile
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"log"
+)
 
 type Signal struct {
 	Name    string
@@ -19,34 +22,50 @@ type Signal struct {
 */
 func Decode(sigfile []byte) ([]Signal, error) {
 
+	log.Printf("Looking for beginning of signals.")
 	//start our parse by looking through the array looking for the close bracket character. 0x5D
 	pos := 0
 	for pos = 0; pos < len(sigfile); pos++ {
 		if sigfile[pos] == 0x5D {
+			pos++
 			break
 		}
 	}
 
+	log.Printf("Found start symbol.")
+
 	toReturn := []Signal{}
+	log.Printf("Parsing program signals.")
+
+	log.Printf("Sigfile %x", sigfile)
 
 	for pos < len(sigfile) {
 		sig := Signal{}
 
+		log.Printf("Pos: %v", pos)
+
+		log.Printf("Size Bytes: %x", sigfile[pos:pos+2])
+
 		//first two bytes are the length
-		size := binary.BigEndian.Uint16(sigfile[pos : pos+2])
+		size := binary.LittleEndian.Uint16(sigfile[pos : pos+2])
+		log.Printf("Size: %v", size)
 
 		//the rest composes our signal
 		curBytes := sigfile[pos+2 : pos+int(size)]
 
 		//last two bytes are our type
-		sig.SigType = curBytes[:len(curBytes)-2]
+		sig.SigType = curBytes[len(curBytes)-2:]
+		log.Printf("Type: %v", sig.SigType)
 
-		//eight bytes before that are our memory address
-		sig.MemAddr = binary.LittleEndian.Uint32(curBytes[len(curBytes)-10 : len(curBytes)-2])
+		//four bytes before that are our memory address
+		sig.MemAddr = binary.LittleEndian.Uint32(curBytes[len(curBytes)-6 : len(curBytes)-2])
+		log.Printf("Addr Little: %v", sig.MemAddr)
 
-		sig.Name = string(curBytes[:len(curBytes)-10])
+		sig.Name = string(curBytes[:len(curBytes)-6])
+		log.Printf("Name: %v", sig.Name)
 
 		toReturn = append(toReturn, sig)
+		pos = pos + int(size)
 	}
 	return toReturn, nil
 }
