@@ -19,8 +19,8 @@ func main() {
 	// Use the `secure` routing group to require authentication
 	secure := router.Group("", echo.WrapMiddleware(authmiddleware.Authenticate))
 
-	router.GET("/", echo.WrapHandler(http.HandlerFunc(hateoas.RootResponse)))
-	router.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
+	secure.GET("/", echo.WrapHandler(http.HandlerFunc(hateoas.RootResponse)))
+	secure.GET("/health", echo.WrapHandler(http.HandlerFunc(health.Check)))
 
 	// secure.GET("/:address/power/on", handlers.PowerOn)
 
