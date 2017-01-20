@@ -1,7 +1,6 @@
 package sigfile
 
 import (
-	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -75,6 +74,6 @@ func TestDecodeFile(t *testing.T) {
 		t.Fail()
 	}
 
-	fmt.Printf("%v\n", len(vals))
-	fmt.Printf("%+v\n", vals[len(vals)-1])
+	//fmt.Printf("%v\n", len(vals))
+	//fmt.Printf("%+v\n", vals[len(vals)-1])
 }

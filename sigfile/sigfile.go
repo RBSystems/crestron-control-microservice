@@ -37,35 +37,27 @@ func Decode(sigfile []byte) ([]Signal, error) {
 	toReturn := []Signal{}
 	log.Printf("Parsing program signals.")
 
-	log.Printf("Sigfile %x", sigfile)
-
 	for pos < len(sigfile) {
 		sig := Signal{}
 
-		log.Printf("Pos: %v", pos)
-
-		log.Printf("Size Bytes: %x", sigfile[pos:pos+2])
-
 		//first two bytes are the length
 		size := binary.LittleEndian.Uint16(sigfile[pos : pos+2])
-		log.Printf("Size: %v", size)
 
 		//the rest composes our signal
 		curBytes := sigfile[pos+2 : pos+int(size)]
 
 		//last two bytes are our type
 		sig.SigType = curBytes[len(curBytes)-2:]
-		log.Printf("Type: %v", sig.SigType)
 
 		//four bytes before that are our memory address
 		sig.MemAddr = binary.LittleEndian.Uint32(curBytes[len(curBytes)-6 : len(curBytes)-2])
-		log.Printf("Addr Little: %v", sig.MemAddr)
 
 		sig.Name = string(curBytes[:len(curBytes)-6])
-		log.Printf("Name: %v", sig.Name)
 
 		toReturn = append(toReturn, sig)
 		pos = pos + int(size)
 	}
+
+	log.Printf("Found %v signals.", len(toReturn))
 	return toReturn, nil
 }
