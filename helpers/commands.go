@@ -35,8 +35,7 @@ func queryState(sigNumber uint32, address string) (string, error) {
 		return "", err
 	}
 	fmt.Printf("%s\n", response)
-	fmt.Printf("%v\n", response)
-
+	
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
 		log.Printf("error writing to connection. ERROR: %v", err.Error())
@@ -57,8 +56,7 @@ func queryState(sigNumber uint32, address string) (string, error) {
 	}
 
 	fmt.Printf("%s\n", response)
-	fmt.Printf("%v\n", response)
-
+	
 	return string(response), nil
 }
 
