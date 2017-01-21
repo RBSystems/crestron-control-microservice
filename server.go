@@ -11,7 +11,10 @@ import (
 )
 
 func main() {
+	// setting up a web server
 	port := ":8004"
+
+	//the router determines which code gets executed after a request
 	router := echo.New()
 	router.Pre(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORS())
