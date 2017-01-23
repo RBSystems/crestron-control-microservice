@@ -104,7 +104,7 @@ func Fetch(address string) (string, error) {
 		return "", err
 	}
 
-	log.Print("Read in progress\n")
+	log.Print("Read in progress")
 
 	connection.ReadUntil("DMPS-300-C", "FILE")
 
@@ -133,7 +133,9 @@ func Fetch(address string) (string, error) {
 			return "", err
 		}
 
-		outfile, er := os.OpenFile("/tmp/sigfiles/"+address+"/"+time.Now().Format(time.RFC3339)+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+		timestamp := time.Now().Format(time.RFC3339 // The timestamp that acts as the filename
+
+		outfile, er := os.OpenFile("/tmp/sigfiles/"+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
 		if er != nil {
 			return "", err
 		}
@@ -145,5 +147,7 @@ func Fetch(address string) (string, error) {
 		}
 
 		rc.Close()
+
+		return timestamp+".sig", nil
 	}
 }
