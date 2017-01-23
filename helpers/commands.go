@@ -85,8 +85,6 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 
 	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v\r\n", sigNumber, sigValue))
 
-	fmt.Printf("payload: %s\n", payload)
-
 	err = writeBytes(connection, payload)
 	if err != nil {
 		return err
@@ -96,8 +94,6 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("response: %v, signal: %v\n", response, sigValue)
 
 	if !strings.EqualFold(response, sigValue) {
 		return errors.New("failed to set value\n")
