@@ -1,0 +1,16 @@
+{
+	"mapping": {
+		"SetVolume": {
+			"signalName": "setVolumeLevel",
+			"signalValue": "level",
+			"parametrizable": true,
+			"highLow": false
+		},
+		"PowerOn": {
+			"signalName": "confirmStartupPress",
+			"signalValue": "",
+			"parametrizable": false,
+			"highLow": true
+		}
+	}
+}
