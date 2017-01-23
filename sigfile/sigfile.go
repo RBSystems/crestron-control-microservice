@@ -102,7 +102,7 @@ start
 end
 where a record is in the format of name (n-8) : memory address (4 byte) : type (2 byte)
 */
-func Decode(sigfile []byte) ([]Signal, error) {
+func Decode(sigfile []byte) (map[string]Signal, error) {
 	log.Printf("Looking for beginning of signals.")
 	//start our parse by looking through the array looking for the close bracket character. 0x5D
 	pos := 0
@@ -115,7 +115,7 @@ func Decode(sigfile []byte) ([]Signal, error) {
 
 	log.Printf("Found start symbol.")
 
-	toReturn := []Signal{}
+	toReturn := make(map[string]Signal)
 	log.Printf("Parsing program signals.")
 
 	for pos < len(sigfile) {
@@ -135,7 +135,8 @@ func Decode(sigfile []byte) ([]Signal, error) {
 
 		sig.Name = string(curBytes[:len(curBytes)-6])
 
-		toReturn = append(toReturn, sig)
+		toReturn[sig.Name] = sig
+
 		pos = pos + int(size)
 	}
 
