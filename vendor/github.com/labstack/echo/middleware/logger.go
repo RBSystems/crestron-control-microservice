@@ -11,6 +11,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/color"
+	isatty "github.com/mattn/go-isatty"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -20,12 +21,9 @@ type (
 		// Skipper defines a function to skip middleware.
 		Skipper Skipper
 
-		// Tags to constructed the logger format.
+		// Log format which can be constructed using the following tags:
 		//
-		// - time_unix
-		// - time_unix_nano
 		// - time_rfc3339
-		// - time_rfc3339_nano
 		// - id (Request ID - Not implemented)
 		// - remote_ip
 		// - uri
@@ -53,7 +51,7 @@ type (
 		Output io.Writer
 
 		template *fasttemplate.Template
-		colorer  *color.Color
+		color    *color.Color
 		pool     sync.Pool
 	}
 )
@@ -62,12 +60,12 @@ var (
 	// DefaultLoggerConfig is the default Logger middleware config.
 	DefaultLoggerConfig = LoggerConfig{
 		Skipper: defaultSkipper,
-		Format: `{"time":"${time_rfc3339_nano}","remote_ip":"${remote_ip}","host":"${host}",` +
+		Format: `{"time":"${time_rfc3339}","remote_ip":"${remote_ip}","host":"${host}",` +
 			`"method":"${method}","uri":"${uri}","status":${status}, "latency":${latency},` +
 			`"latency_human":"${latency_human}","bytes_in":${bytes_in},` +
 			`"bytes_out":${bytes_out}}` + "\n",
-		Output:  os.Stdout,
-		colorer: color.New(),
+		Output: os.Stdout,
+		color:  color.New(),
 	}
 )
 
@@ -91,8 +89,10 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 	}
 
 	config.template = fasttemplate.New(config.Format, "${", "}")
-	config.colorer = color.New()
-	config.colorer.SetOutput(config.Output)
+	config.color = color.New()
+	if w, ok := config.Output.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
+		config.color.Disable()
+	}
 	config.pool = sync.Pool{
 		New: func() interface{} {
 			return bytes.NewBuffer(make([]byte, 256))
@@ -116,59 +116,54 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 			buf.Reset()
 			defer config.pool.Put(buf)
 
-			if _, err = config.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
+			_, err = config.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
 				switch tag {
-				case "time_unix":
-					return buf.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
-				case "time_unix_nano":
-					return buf.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 				case "time_rfc3339":
-					return buf.WriteString(time.Now().Format(time.RFC3339))
-				case "time_rfc3339_nano":
-					return buf.WriteString(time.Now().Format(time.RFC3339Nano))
+					return w.Write([]byte(time.Now().Format(time.RFC3339)))
 				case "remote_ip":
-					return buf.WriteString(c.RealIP())
+					ra := c.RealIP()
+					return w.Write([]byte(ra))
 				case "host":
-					return buf.WriteString(req.Host)
+					return w.Write([]byte(req.Host))
 				case "uri":
-					return buf.WriteString(req.RequestURI)
+					return w.Write([]byte(req.RequestURI))
 				case "method":
-					return buf.WriteString(req.Method)
+					return w.Write([]byte(req.Method))
 				case "path":
 					p := req.URL.Path
 					if p == "" {
 						p = "/"
 					}
-					return buf.WriteString(p)
+					return w.Write([]byte(p))
 				case "referer":
-					return buf.WriteString(req.Referer())
+					return w.Write([]byte(req.Referer()))
 				case "user_agent":
-					return buf.WriteString(req.UserAgent())
+					return w.Write([]byte(req.UserAgent()))
 				case "status":
 					n := res.Status
-					s := config.colorer.Green(n)
+					s := config.color.Green(n)
 					switch {
 					case n >= 500:
-						s = config.colorer.Red(n)
+						s = config.color.Red(n)
 					case n >= 400:
-						s = config.colorer.Yellow(n)
+						s = config.color.Yellow(n)
 					case n >= 300:
-						s = config.colorer.Cyan(n)
+						s = config.color.Cyan(n)
 					}
-					return buf.WriteString(s)
+					return w.Write([]byte(s))
 				case "latency":
-					l := stop.Sub(start).Nanoseconds() / int64(time.Microsecond)
-					return buf.WriteString(strconv.FormatInt(l, 10))
+					l := stop.Sub(start).Nanoseconds() / 1000
+					return w.Write([]byte(strconv.FormatInt(l, 10)))
 				case "latency_human":
-					return buf.WriteString(stop.Sub(start).String())
+					return w.Write([]byte(stop.Sub(start).String()))
 				case "bytes_in":
-					cl := req.Header.Get(echo.HeaderContentLength)
-					if cl == "" {
-						cl = "0"
+					b := req.Header.Get(echo.HeaderContentLength)
+					if b == "" {
+						b = "0"
 					}
-					return buf.WriteString(cl)
+					return w.Write([]byte(b))
 				case "bytes_out":
-					return buf.WriteString(strconv.FormatInt(res.Size, 10))
+					return w.Write([]byte(strconv.FormatInt(res.Size, 10)))
 				default:
 					switch {
 					case strings.HasPrefix(tag, "header:"):
@@ -180,11 +175,10 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 					}
 				}
 				return 0, nil
-			}); err != nil {
-				return
+			})
+			if err == nil {
+				config.Output.Write(buf.Bytes())
 			}
-
-			_, err = config.Output.Write(buf.Bytes())
 			return
 		}
 	}
