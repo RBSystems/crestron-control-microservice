@@ -1,9 +1,13 @@
 package helpers
 
 import (
+	"encoding/binary"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -13,28 +17,11 @@ var port = ":41795"
 func QueryState(sigNumber uint32, address string) (string, error) {
 	log.Printf("querying state of %v on %v", sigNumber, address)
 
-	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
-
+	connection, err := startConnection(address, port)
 	if err != nil {
-		log.Printf("error resolving address. ERROR: %v", err.Error())
 		return "", err
 	}
-
-	connection, err := net.DialTCP("tcp", nil, tcpAdder)
-
-	if err != nil {
-		log.Printf("error connecting to host. ERROR: %v", err.Error())
-		return "", err
-	}
-
 	defer connection.Close()
-
-	response, err := readUntil(connection, ">")
-	if err != nil {
-		log.Printf("error reading response. ERROR: %v", err.Error())
-		return "", err
-	}
-	fmt.Printf("%s\n", response)
 
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
@@ -48,21 +35,74 @@ func QueryState(sigNumber uint32, address string) (string, error) {
 		return "", err
 	}
 
-	response, err = readUntil(connection, "0000")
+	input := make([]byte, 4)
+	binary.BigEndian.PutUint32(input, sigNumber)
 
+	regExString := fmt.Sprintf(`%X=(\S*)\r`, input)
+
+	metaResponse, err := readUntil(connection, regExString)
 	if err != nil {
 		log.Printf("error reading response. ERROR: %v", err.Error())
 		return "", err
 	}
 
-	fmt.Printf("%s\n", response)
+	//call to readUntil catches any errors
+	regEx, _ := regexp.Compile(regExString)
+	output := string(regEx.FindSubmatch(metaResponse)[1])
 
-	return string(response), nil
+	//if it contains a bracket, it's a hex representation of a byte array
+	if strings.Contains(output, "[") {
+		//remove first and last character
+		output = output[1 : len(output)-1]
+
+		//split on brackets
+		elements := strings.Split(output, "][")
+
+		//join strings
+		output = strings.Join(elements, "")
+
+		outputBytes, err := hex.DecodeString(output)
+		if err != nil {
+			return "", err
+		}
+
+		output = string(outputBytes)
+
+	}
+
+	return output, nil
 }
 
 //sets the state
 func SetState(sigNumber uint32, sigValue string, address string) error {
 	log.Printf("setting state of %v to %v on %v", sigNumber, sigValue, address)
+
+	connection, err := startConnection(address, port)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v\r\n", sigNumber, sigValue))
+
+	fmt.Printf("payload: %s\n", payload)
+
+	err = writeBytes(connection, payload)
+	if err != nil {
+		return err
+	}
+
+	response, err := QueryState(sigNumber, address)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("response: %v, signal: %v\n", response, sigValue)
+
+	if !strings.EqualFold(response, sigValue) {
+		return errors.New("failed to set value\n")
+	}
+
 	return nil
 }
 
@@ -73,11 +113,40 @@ func readPacket(connection *net.TCPConn) ([]byte, error) {
 	return response, err
 }
 
-func readUntil(connection *net.TCPConn, delim string) ([]byte, error) {
-	size := len(delim)
+//opens connection, performs handshake, waits for first prompt
+func startConnection(address string, port string) (*net.TCPConn, error) {
+	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
+	if err != nil {
+		log.Printf("error resolving address. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	connection, err := net.DialTCP("tcp", nil, tcpAdder)
+	if err != nil {
+		log.Printf("error connecting to host. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	_, err = readUntil(connection, ">")
+	if err != nil {
+		log.Printf("error reading response. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	return connection, nil
+}
+
+func readUntil(connection *net.TCPConn, expression string) ([]byte, error) {
+	size := len(expression)
 	c := make([]byte, size)
 	toReturn := []byte{}
-	for !strings.Contains(string(toReturn), delim) {
+
+	regEx, err := regexp.Compile(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	for !regEx.Match(toReturn) {
 
 		_, err := connection.Read(c)
 		if err != nil {
