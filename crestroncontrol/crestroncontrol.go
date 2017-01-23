@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+
+	"github.com/labstack/echo"
 )
+
+var SignalConfigFile AllSignalConfig
 
 func ParseConfig() (AllSignalConfig, error) {
 	config := AllSignalConfig{}
@@ -16,4 +20,14 @@ func ParseConfig() (AllSignalConfig, error) {
 
 	err = json.Unmarshal(bytes, &config)
 	return config, err
+}
+
+func GetSignalConfigValue(context echo.Context, signal string) string {
+	value := SignalConfigFile.Mapping[signal].SignalValue
+
+	if SignalConfigFile.Mapping[signal].Parameterized {
+		value = context.Param(SignalConfigFile.Mapping[signal].SignalValue)
+	}
+
+	return value
 }

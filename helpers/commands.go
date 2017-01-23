@@ -10,7 +10,7 @@ import (
 
 var port = ":41795"
 
-func queryState(sigNumber uint32, address string) (string, error) {
+func QueryState(sigNumber uint32, address string) (string, error) {
 	log.Printf("querying state of %v on %v", sigNumber, address)
 
 	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
@@ -35,7 +35,7 @@ func queryState(sigNumber uint32, address string) (string, error) {
 		return "", err
 	}
 	fmt.Printf("%s\n", response)
-	
+
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
 		log.Printf("error writing to connection. ERROR: %v", err.Error())
@@ -56,12 +56,12 @@ func queryState(sigNumber uint32, address string) (string, error) {
 	}
 
 	fmt.Printf("%s\n", response)
-	
+
 	return string(response), nil
 }
 
 //sets the state
-func setState(sigNumber uint32, sigValue string, address string) error {
+func SetState(sigNumber uint32, sigValue string, address string) error {
 	log.Printf("setting state of %v to %v on %v", sigNumber, sigValue, address)
 	return nil
 }

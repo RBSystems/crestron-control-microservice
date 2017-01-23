@@ -13,12 +13,10 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-var SignalConfig crestroncontrol.AllSignalConfig
-
 func main() {
 	var err error
 
-	SignalConfig, err = crestroncontrol.ParseConfig()
+	crestroncontrol.SignalConfigFile, err = crestroncontrol.ParseConfig()
 	if err != nil {
 		log.Fatal("Error parsing signal-configuration.json: " + err.Error())
 	}

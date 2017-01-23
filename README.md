@@ -5,13 +5,13 @@ The configuration file, `signal-configuration.json`, exists to make mapping of s
     "SetVolume": {
         "signalName": "setVolumeLevel",
         "signalValue": "level",
-        "parametrizable": true,
+		"parameterized": true,
         "highLow": false
     },
     "PowerOn": {
         "signalName": "confirmStartupPress",
-        "signalValue": "",
-        "parametrizable": false,
+        "signalValue": 1,
+		"parameterized": true,
         "highLow": true 
     }
 }

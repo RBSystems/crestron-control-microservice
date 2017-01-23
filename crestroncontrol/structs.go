@@ -5,8 +5,8 @@ type AllSignalConfig struct {
 }
 
 type SignalConfig struct {
-	SignalName     string `json: "signalName"`
-	SignalValue    string `json: "signalValue"`
-	Parametrizable bool   `json: "parameterizable"`
-	HighLow        bool   `json: "highLow"`
+	SignalName    string `json: "signalName"`
+	SignalValue   string `json: "signalValue"`
+	Parameterized bool   `json: "parameterized"`
+	HighLow       bool   `json: "highLow"`
 }
