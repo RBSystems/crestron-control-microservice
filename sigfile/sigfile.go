@@ -21,7 +21,6 @@ type Signal struct {
   where a record is in the format of name (n-8) : memory address (4 byte) : type (2 byte)
 */
 func Decode(sigfile []byte) ([]Signal, error) {
-
 	log.Printf("Looking for beginning of signals.")
 	//start our parse by looking through the array looking for the close bracket character. 0x5D
 	pos := 0
