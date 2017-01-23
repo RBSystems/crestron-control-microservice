@@ -17,6 +17,10 @@ func QueryState(sigNumber uint32, address string) (string, error) {
 	log.Printf("querying state of %v on %v", sigNumber, address)
 
 	connection, err := startConnection(address, port)
+	if err != nil {
+		return "", err
+	}
+	defer connection.Close()
 
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
@@ -33,20 +37,22 @@ func QueryState(sigNumber uint32, address string) (string, error) {
 	input := make([]byte, 4)
 	binary.BigEndian.PutUint32(input, sigNumber)
 
-	metaResponse, err := readUntil(connection, fmt.Sprintf(`%x=(\S*)\r`, input))
+	regExString := fmt.Sprintf(`%X=(\S*)\r`, input)
+
+	metaResponse, err := readUntil(connection, regExString)
 	if err != nil {
 		log.Printf("error reading response. ERROR: %v", err.Error())
 		return "", err
 	}
 
 	//call to readUntil catches any errors
-	regEx, _ := regexp.Compile(fmt.Sprintf(`%x=(\S*)\r`, input))
+	regEx, _ := regexp.Compile(regExString)
 	output := string(regEx.FindSubmatch(metaResponse)[1])
 
 	//if it contains a bracket, it's a hex representation of a byte array
 	if strings.Contains(output, "[") {
 		//remove first and last character
-		output = output[1 : len(output)-2]
+		output = output[1 : len(output)-1]
 
 		//split on brackets
 		elements := strings.Split(output, "][")
@@ -63,9 +69,6 @@ func QueryState(sigNumber uint32, address string) (string, error) {
 
 	}
 
-	fmt.Printf("%s\n", output)
-	fmt.Printf("%v\n", output)
-
 	return output, nil
 }
 
@@ -77,6 +80,7 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 	if err != nil {
 		return err
 	}
+	defer connection.Close()
 
 	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v", sigNumber, sigValue))
 
@@ -85,7 +89,7 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 		return err
 	}
 
-	response, err := QueryState(sigNumber, address)
+	// response, err := QueryState(sigNumber, address)
 
 	return nil
 }
@@ -112,8 +116,6 @@ func startConnection(address string, port string) (*net.TCPConn, error) {
 		log.Printf("error connecting to host. ERROR: %v", err.Error())
 		return nil, err
 	}
-
-	defer connection.Close()
 
 	_, err = readUntil(connection, ">")
 	if err != nil {

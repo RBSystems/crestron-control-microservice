@@ -3,5 +3,9 @@ package helpers
 import "testing"
 
 func TestQueryState(t *testing.T) {
-	queryState(0x0054, "10.6.36.220")
+	response, err := QueryState(0x02FB, "10.6.36.220")
+	if err != nil {
+		t.Log(err.Error())
+	}
+	t.Log(response)
 }
