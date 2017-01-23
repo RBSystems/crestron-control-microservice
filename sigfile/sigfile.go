@@ -3,33 +3,104 @@ package sigfile
 import (
 	"archive/zip"
 	"encoding/binary"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
 
+	xmodem "github.com/byuoitav/go-xmodem"
 	"github.com/ziutek/telnet"
 )
 
+//Signal represents a Creston programming signal
 type Signal struct {
 	Name    string
 	MemAddr uint32
 	SigType []byte
 }
 
-func Read(address string) ([]bytes, error) {
+var sigDirectory = "/tmp/sigfiles/"
+var refreshRate = time.Duration(15 * time.Minute)
 
+/*
+Read checks for a current sig file for the address provided, if none is present,
+calls Fetch(). Reads and returns the bytes of the current sig file.
+
+This function may also be used to update the sig file by simply ignoring the bytes
+returned.
+*/
+func Read(address string) ([]byte, error) {
+	log.Printf("Checking for a current sig file for %v...", address)
+
+	//Check the sig file present.
+	info, err := ioutil.ReadDir(sigDirectory + address)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			//some other error.
+			return []byte{}, err
+		}
+		log.Printf("Directory for %v, did not exist, creating directory...", address)
+
+		//the directory didn't exist, we need to create it, then go get the file.
+		err = os.MkdirAll(sigDirectory+address, 0777)
+		if err != nil {
+			log.Printf("Error creating directory. ERROR: %v", err.Error())
+			return []byte{}, err
+		}
+		log.Printf("Directory created.")
+
+		//Do we need to get the info again to continue in flow below.
+		//If not, remove below section.
+		info, err = ioutil.ReadDir(sigDirectory + address)
+
+		if err != nil {
+			log.Printf("Error: %v", err.Error())
+
+		}
+	}
+
+	//There should only be one file
+	if len(info) > 1 {
+		return []byte{}, errors.New("the sig file directory for " + address + " is malformed. Only one file is permitted in the directory.")
+	}
+
+	addr := ""
+	//No files, go get it.
+	if len(info) == 0 {
+		addr, err = Fetch(address)
+		if err != nil {
+			return []byte{}, err
+		}
+	} else { // we need to check the mod time.
+		if time.Now().Sub(info[0].ModTime()) > refreshRate { // it's been too long, go get it.
+			addr, err = Fetch(address)
+			if err != nil {
+				return []byte{}, err
+			}
+		} else {
+			addr = info[0].Name()
+		}
+	}
+	log.Printf("Reading sig file from time %v...", addr)
+	//go read addr, return the bytes
+	bytes, err := ioutil.ReadFile(sigDirectory + address + "/" + addr)
+	if err != nil {
+		return []byte{}, err
+	}
+	log.Printf("Done.")
+	return bytes, err
 }
 
 /*
-  Decode takes a sig file and decodes it
-  The format is
-  start
-  [somechar] :  2 byte length n : record length n-2 : 2 byte length : record length n-2 ...
-  ...
-
-  where a record is in the format of name (n-8) : memory address (4 byte) : type (2 byte)
+Decode takes a sig file and decodes it
+The format is
+start
+[somechar] :  2 byte length n : record length n-2 : 2 byte length : record length n-2 ...
+...
+end
+where a record is in the format of name (n-8) : memory address (4 byte) : type (2 byte)
 */
 func Decode(sigfile []byte) ([]Signal, error) {
 	log.Printf("Looking for beginning of signals.")
@@ -72,6 +143,7 @@ func Decode(sigfile []byte) ([]Signal, error) {
 	return toReturn, nil
 }
 
+//Fetch retrieves a sig file fromthe crestron dump
 func Fetch(address string) (string, error) {
 	connection, err := telnet.Dial("tcp", address+":41795")
 	if err != nil {
@@ -80,6 +152,7 @@ func Fetch(address string) (string, error) {
 	defer connection.Close()
 	connection.SetUnixWriteMode(true)
 
+	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
 	//look for prompt
 	output, err := connection.ReadUntil(">")
 	if err != nil {
@@ -87,11 +160,13 @@ func Fetch(address string) (string, error) {
 	}
 	log.Printf("%s", output)
 
+	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	_, err = connection.Write([]byte("\n"))
 	if err != nil {
 		return "", err
 	}
 
+	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
 	output, err = connection.ReadUntil(">")
 	if err != nil {
 		return "", err
@@ -99,6 +174,7 @@ func Fetch(address string) (string, error) {
 	log.Printf("%s", output)
 
 	//send command over conncection
+	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	_, err = connection.Write([]byte("XGET TEC HD.zig\n"))
 	if err != nil {
 		return "", err
@@ -106,12 +182,15 @@ func Fetch(address string) (string, error) {
 
 	log.Print("Read in progress")
 
+	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
 	connection.ReadUntil("DMPS-300-C", "FILE")
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	log.Print("FILE UPLOAD found")
 
+	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
+	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	response, err := xmodem.Receive(connection.Conn)
 
 	if err != nil {
@@ -125,29 +204,35 @@ func Fetch(address string) (string, error) {
 	}
 	defer r.Close()
 
-	for _, f := range r.File {
-		log.Printf("Writing %s", f.Name)
-		rc, err := f.Open()
-
-		if err != nil {
-			return "", err
-		}
-
-		timestamp := time.Now().Format(time.RFC3339 // The timestamp that acts as the filename
-
-		outfile, er := os.OpenFile("/tmp/sigfiles/"+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
-		if er != nil {
-			return "", err
-		}
-
-		_, err = io.Copy(outfile, rc)
-
-		if err != nil {
-			return "", err
-		}
-
-		rc.Close()
-
-		return timestamp+".sig", nil
+	//Validate that the zig only has one file
+	if len(r.File) != 1 {
+		log.Printf("Zig had more than one file.")
+		return "", errors.New("Zig had more than one file.")
 	}
+
+	f := r.File[0]
+	log.Printf("Writing %s", f.Name)
+	rc, err := f.Open()
+
+	if err != nil {
+		return "", err
+	}
+
+	timestamp := time.Now().Format(time.RFC3339) // The timestamp that acts as the filename
+
+	outfile, er := os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+	if er != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(outfile, rc)
+
+	if err != nil {
+		return "", err
+	}
+
+	rc.Close()
+
+	return timestamp + ".sig", nil
+
 }

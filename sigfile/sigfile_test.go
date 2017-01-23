@@ -12,7 +12,7 @@ func TestDecodeSingle(t *testing.T) {
 		t.FailNow()
 	}
 
-	vals, err := Parse(bytes)
+	vals, err := Decode(bytes)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -46,7 +46,7 @@ func TestDecodeFile(t *testing.T) {
 		t.FailNow()
 	}
 
-	vals, err := Parse(bytes)
+	vals, err := Decode(bytes)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
