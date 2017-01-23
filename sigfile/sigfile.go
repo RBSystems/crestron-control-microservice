@@ -117,7 +117,7 @@ where a record is in the format of name (n-8) : memory address (4 byte) : type (
 */
 func Decode(sigfile []byte) (map[string]Signal, error) {
 	log.Printf("Looking for beginning of signals.")
-	//start our parse by looking through the array looking for the close bracket character. 0x5D
+	//start our parse by looking through the array for the close bracket character. 0x5D
 	pos := 0
 	for pos = 0; pos < len(sigfile); pos++ {
 		if sigfile[pos] == 0x5D {

@@ -1,6 +1,7 @@
 package sigfile
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -11,6 +12,8 @@ func TestDecodeSingle(t *testing.T) {
 		t.Error(err)
 		t.FailNow()
 	}
+
+	fmt.Printf("%S", bytes)
 
 	vals, err := Decode(bytes)
 	if err != nil {
@@ -23,17 +26,17 @@ func TestDecodeSingle(t *testing.T) {
 		t.Fail()
 	}
 
-	if vals[0].MemAddr != 22005 {
+	if vals["::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5"].MemAddr != 22005 {
 		t.Error("Bad memory address")
 		t.Fail()
 	}
 
-	if vals[0].Name != "::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5" {
+	if vals["::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5"].Name != "::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5" {
 		t.Error("Bad Signal Name")
 		t.Fail()
 	}
 
-	if vals[0].SigType[0] != 0 && vals[0].SigType[1] != 1 {
+	if vals["::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5"].SigType[0] != 0 && vals["::PktDeltaLWP:S-1.1:S-3:S-8.10.2.000055F5"].SigType[1] != 1 {
 		t.Error("Incorrect type.")
 		t.Fail()
 	}
@@ -57,7 +60,7 @@ func TestDecodeFile(t *testing.T) {
 		t.Fail()
 	}
 
-	lastEntry := vals[len(vals)-1]
+	lastEntry := vals["Display1_Offline_and"]
 
 	if lastEntry.MemAddr != 5113 {
 		t.Error("Bad memory address")
