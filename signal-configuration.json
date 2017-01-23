@@ -3,13 +3,13 @@
 		"SetVolume": {
 			"signalName": "setVolumeLevel",
 			"signalValue": "level",
-			"parametrizable": true,
+			"parameterizable": true,
 			"highLow": false
 		},
 		"PowerOn": {
 			"signalName": "confirmStartupPress",
 			"signalValue": "",
-			"parametrizable": false,
+			"parameterizable": false,
 			"highLow": true
 		}
 	}
