@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -82,14 +83,25 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 	}
 	defer connection.Close()
 
-	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v", sigNumber, sigValue))
+	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v\r\n", sigNumber, sigValue))
+
+	fmt.Printf("payload: %s\n", payload)
 
 	err = writeBytes(connection, payload)
 	if err != nil {
 		return err
 	}
 
-	// response, err := QueryState(sigNumber, address)
+	response, err := QueryState(sigNumber, address)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("response: %v, signal: %v\n", response, sigValue)
+
+	if !strings.EqualFold(response, sigValue) {
+		return errors.New("failed to set value\n")
+	}
 
 	return nil
 }
@@ -104,14 +116,12 @@ func readPacket(connection *net.TCPConn) ([]byte, error) {
 //opens connection, performs handshake, waits for first prompt
 func startConnection(address string, port string) (*net.TCPConn, error) {
 	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
-
 	if err != nil {
 		log.Printf("error resolving address. ERROR: %v", err.Error())
 		return nil, err
 	}
 
 	connection, err := net.DialTCP("tcp", nil, tcpAdder)
-
 	if err != nil {
 		log.Printf("error connecting to host. ERROR: %v", err.Error())
 		return nil, err
