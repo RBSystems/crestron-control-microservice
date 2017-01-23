@@ -25,6 +25,19 @@ var sigDirectory = "/tmp/sigfiles/"
 var refreshRate = time.Duration(15 * time.Minute)
 
 /*
+GetSignalsForAddress returns a current sigfile for the address provided.
+*/
+func GetSignalsForAddress(address string) (map[string]Signal, error) {
+	bytes, err := Read(address)
+	if err != nil {
+		return nil, err
+	}
+	toReturn, err := Decode(bytes)
+
+	return toReturn, err
+}
+
+/*
 Read checks for a current sig file for the address provided, if none is present,
 calls Fetch(). Reads and returns the bytes of the current sig file.
 
