@@ -2,41 +2,21 @@ package helpers
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
 	"regexp"
+	"strings"
 	"time"
 )
 
 var port = ":41795"
 
-func queryState(sigNumber uint32, address string) (string, error) {
+func QueryState(sigNumber uint32, address string) (string, error) {
 	log.Printf("querying state of %v on %v", sigNumber, address)
 
-	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
-
-	if err != nil {
-		log.Printf("error resolving address. ERROR: %v", err.Error())
-		return "", err
-	}
-
-	connection, err := net.DialTCP("tcp", nil, tcpAdder)
-
-	if err != nil {
-		log.Printf("error connecting to host. ERROR: %v", err.Error())
-		return "", err
-	}
-
-	defer connection.Close()
-
-	response, err := readUntil(connection, ">")
-	if err != nil {
-		log.Printf("error reading response. ERROR: %v", err.Error())
-		return "", err
-	}
-	fmt.Printf("%s\n", response)
-	fmt.Printf("%v\n", response)
+	connection, err := startConnection(address, port)
 
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
@@ -63,6 +43,26 @@ func queryState(sigNumber uint32, address string) (string, error) {
 	regEx, _ := regexp.Compile(fmt.Sprintf(`%x=(\S*)\r`, input))
 	output := string(regEx.FindSubmatch(metaResponse)[1])
 
+	//if it contains a bracket, it's a hex representation of a byte array
+	if strings.Contains(output, "[") {
+		//remove first and last character
+		output = output[1 : len(output)-2]
+
+		//split on brackets
+		elements := strings.Split(output, "][")
+
+		//join strings
+		output = strings.Join(elements, "")
+
+		outputBytes, err := hex.DecodeString(output)
+		if err != nil {
+			return "", err
+		}
+
+		output = string(outputBytes)
+
+	}
+
 	fmt.Printf("%s\n", output)
 	fmt.Printf("%v\n", output)
 
@@ -70,8 +70,23 @@ func queryState(sigNumber uint32, address string) (string, error) {
 }
 
 //sets the state
-func setState(sigNumber uint32, sigValue string, address string) error {
+func SetState(sigNumber uint32, sigValue string, address string) error {
 	log.Printf("setting state of %v to %v on %v", sigNumber, sigValue, address)
+
+	connection, err := startConnection(address, port)
+	if err != nil {
+		return err
+	}
+
+	payload := []byte(fmt.Sprintf("SETSIGNAL %v %v", sigNumber, sigValue))
+
+	err = writeBytes(connection, payload)
+	if err != nil {
+		return err
+	}
+
+	response, err := QueryState(sigNumber, address)
+
 	return nil
 }
 
@@ -80,6 +95,33 @@ func readPacket(connection *net.TCPConn) ([]byte, error) {
 	_, err := connection.Read(response)
 
 	return response, err
+}
+
+//opens connection, performs handshake, waits for first prompt
+func startConnection(address string, port string) (*net.TCPConn, error) {
+	tcpAdder, err := net.ResolveTCPAddr("tcp", address+port)
+
+	if err != nil {
+		log.Printf("error resolving address. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	connection, err := net.DialTCP("tcp", nil, tcpAdder)
+
+	if err != nil {
+		log.Printf("error connecting to host. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	defer connection.Close()
+
+	_, err = readUntil(connection, ">")
+	if err != nil {
+		log.Printf("error reading response. ERROR: %v", err.Error())
+		return nil, err
+	}
+
+	return connection, nil
 }
 
 func readUntil(connection *net.TCPConn, expression string) ([]byte, error) {
