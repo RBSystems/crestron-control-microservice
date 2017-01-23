@@ -1,10 +1,11 @@
 package helpers
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"net"
-	"strings"
+	"regexp"
 	"time"
 )
 
@@ -35,7 +36,8 @@ func queryState(sigNumber uint32, address string) (string, error) {
 		return "", err
 	}
 	fmt.Printf("%s\n", response)
-	
+	fmt.Printf("%v\n", response)
+
 	err = writeBytes(connection, []byte(fmt.Sprintf("DBGSIGNAL %v ON\r\n", sigNumber)))
 	if err != nil {
 		log.Printf("error writing to connection. ERROR: %v", err.Error())
@@ -48,16 +50,23 @@ func queryState(sigNumber uint32, address string) (string, error) {
 		return "", err
 	}
 
-	response, err = readUntil(connection, "0000")
+	input := make([]byte, 4)
+	binary.BigEndian.PutUint32(input, sigNumber)
 
+	metaResponse, err := readUntil(connection, fmt.Sprintf(`%x=(\S*)\r`, input))
 	if err != nil {
 		log.Printf("error reading response. ERROR: %v", err.Error())
 		return "", err
 	}
 
-	fmt.Printf("%s\n", response)
-	
-	return string(response), nil
+	//call to readUntil catches any errors
+	regEx, _ := regexp.Compile(fmt.Sprintf(`%x=(\S*)\r`, input))
+	output := string(regEx.FindSubmatch(metaResponse)[1])
+
+	fmt.Printf("%s\n", output)
+	fmt.Printf("%v\n", output)
+
+	return output, nil
 }
 
 //sets the state
@@ -73,11 +82,17 @@ func readPacket(connection *net.TCPConn) ([]byte, error) {
 	return response, err
 }
 
-func readUntil(connection *net.TCPConn, delim string) ([]byte, error) {
-	size := len(delim)
+func readUntil(connection *net.TCPConn, expression string) ([]byte, error) {
+	size := len(expression)
 	c := make([]byte, size)
 	toReturn := []byte{}
-	for !strings.Contains(string(toReturn), delim) {
+
+	regEx, err := regexp.Compile(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	for !regEx.Match(toReturn) {
 
 		_, err := connection.Read(c)
 		if err != nil {
