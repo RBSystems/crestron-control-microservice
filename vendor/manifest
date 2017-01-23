@@ -227,6 +227,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/ziutek/telnet",
+			"repository": "https://github.com/ziutek/telnet",
+			"vcs": "git",
+			"revision": "49d9be70897fe0a7400a152121453075b2835866",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "golang.org/x/crypto/ocsp",
 			"repository": "https://go.googlesource.com/crypto",
 			"vcs": "git",

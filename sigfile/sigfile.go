@@ -1,14 +1,25 @@
 package sigfile
 
 import (
+	"archive/zip"
 	"encoding/binary"
+	"io"
+	"io/ioutil"
 	"log"
+	"os"
+	"time"
+
+	"github.com/ziutek/telnet"
 )
 
 type Signal struct {
 	Name    string
 	MemAddr uint32
 	SigType []byte
+}
+
+func Read(address string) ([]bytes, error) {
+
 }
 
 /*
@@ -21,7 +32,6 @@ type Signal struct {
   where a record is in the format of name (n-8) : memory address (4 byte) : type (2 byte)
 */
 func Decode(sigfile []byte) ([]Signal, error) {
-
 	log.Printf("Looking for beginning of signals.")
 	//start our parse by looking through the array looking for the close bracket character. 0x5D
 	pos := 0
@@ -60,4 +70,80 @@ func Decode(sigfile []byte) ([]Signal, error) {
 
 	log.Printf("Found %v signals.", len(toReturn))
 	return toReturn, nil
+}
+
+func Fetch(address string) (string, error) {
+	connection, err := telnet.Dial("tcp", address+":41795")
+	if err != nil {
+		return "", err
+	}
+	defer connection.Close()
+	connection.SetUnixWriteMode(true)
+
+	//look for prompt
+	output, err := connection.ReadUntil(">")
+	if err != nil {
+		return "", err
+	}
+	log.Printf("%s", output)
+
+	_, err = connection.Write([]byte("\n"))
+	if err != nil {
+		return "", err
+	}
+
+	output, err = connection.ReadUntil(">")
+	if err != nil {
+		return "", err
+	}
+	log.Printf("%s", output)
+
+	//send command over conncection
+	_, err = connection.Write([]byte("XGET TEC HD.zig\n"))
+	if err != nil {
+		return "", err
+	}
+
+	log.Print("Read in progress\n")
+
+	connection.ReadUntil("DMPS-300-C", "FILE")
+
+	time.Sleep(3 * time.Second)
+
+	log.Print("FILE UPLOAD found")
+
+	response, err := xmodem.Receive(connection.Conn)
+
+	if err != nil {
+		return "", err
+	}
+
+	ioutil.WriteFile("./out-temp.zip", response, 0777)
+	r, err := zip.OpenReader("./out-temp.zip")
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		log.Printf("Writing %s", f.Name)
+		rc, err := f.Open()
+
+		if err != nil {
+			return "", err
+		}
+
+		outfile, er := os.OpenFile("/tmp/sigfiles/"+address+"/"+time.Now().Format(time.RFC3339)+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+		if er != nil {
+			return "", err
+		}
+
+		_, err = io.Copy(outfile, rc)
+
+		if err != nil {
+			return "", err
+		}
+
+		rc.Close()
+	}
 }
