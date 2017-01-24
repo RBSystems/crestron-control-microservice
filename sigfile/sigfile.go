@@ -28,12 +28,14 @@ var refreshRate = time.Duration(15 * time.Minute)
 GetSignalsForAddress returns a current sigfile for the address provided.
 */
 func GetSignalsForAddress(address string) (map[string]Signal, error) {
+	log.Printf("Getting the signals for address %v", address)
 	bytes, err := Read(address)
 	if err != nil {
 		return nil, err
 	}
 	toReturn, err := Decode(bytes)
 
+	log.Printf("done")
 	return toReturn, err
 }
 
@@ -159,6 +161,8 @@ func Decode(sigfile []byte) (map[string]Signal, error) {
 
 //Fetch retrieves a sig file fromthe crestron dump
 func Fetch(address string) (string, error) {
+	log.Pritnf("Fetching the sig file for %v", address)
+
 	connection, err := telnet.Dial("tcp", address+":41795")
 	if err != nil {
 		return "", err
@@ -205,7 +209,10 @@ func Fetch(address string) (string, error) {
 
 	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
 	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
+
+	log.Printf("Starting XMODEM receive")
 	response, err := xmodem.Receive(connection.Conn)
+	log.Printf("XMODEM receive done. ")
 
 	if err != nil {
 		return "", err

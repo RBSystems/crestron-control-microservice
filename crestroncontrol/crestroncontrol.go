@@ -22,6 +22,8 @@ func ParseConfig() (AllSignalConfig, error) {
 	return config, err
 }
 
+//GetSignalConfigValue needs to handle if we need to paramterize the
+//signal name, as well as the value.
 func GetSignalConfigValue(context echo.Context, signal string) string {
 	value := SignalConfigFile.Mapping[signal].SignalValue
 
