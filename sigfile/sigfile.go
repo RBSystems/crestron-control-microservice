@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -216,10 +217,13 @@ func Fetch(address string) (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("response length: %v\n", len(response))
+
 	log.Printf("XMODEM receive done. ")
 
 	log.Printf("Preparing to unzip files.")
 	err = ioutil.WriteFile(sigDirectory+"out-temp.zip", response, 0777)
+
 	if err != nil {
 		log.Printf("Could not write temp zip file. ERROR: %v", err.Error())
 		return "", err
