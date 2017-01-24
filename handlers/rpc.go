@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -20,11 +21,25 @@ func PowerOn(context echo.Context) error {
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 	}
 
+	//Get the signal value
 	value := crestroncontrol.GetSignalConfigValue(context, "PowerOn")
 
+	//Get Config object
 	config := crestroncontrol.SignalConfigFile.Mapping["PowerOn"]
 
-	err = helpers.SetState(allSignals["PowerOn"].MemAddr, value, context.Param("address"))
+	var signal sigfile.Signal
+	var ok bool
+
+	if signal, ok = allSignals[config.SignalName]; !ok {
+		err = fmt.Errorf("no signal for %v defined in the signal file", config.SignalName)
+
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+	}
+
+	//set the state with the memory address from the config name.
+	err = helpers.SetState(signal.MemAddr, value, context.Param("address"))
+
 	if err != nil {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))

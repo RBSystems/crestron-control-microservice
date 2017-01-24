@@ -7,7 +7,7 @@
 			"highLow": false
 		},
 		"PowerOn": {
-			"signalName": "confirmStartupPress",
+			"signalName": "Startup_press",
 			"signalValue": "",
 			"parameterizable": false,
 			"highLow": true

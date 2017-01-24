@@ -8,8 +8,10 @@ import (
 	"github.com/labstack/echo"
 )
 
+//SignalConfigFile maps signal names to their operations.
 var SignalConfigFile AllSignalConfig
 
+//ParseConfig gets the config file and reads it into the struct
 func ParseConfig() (AllSignalConfig, error) {
 	config := AllSignalConfig{}
 
@@ -26,6 +28,10 @@ func ParseConfig() (AllSignalConfig, error) {
 //signal name, as well as the value.
 func GetSignalConfigValue(context echo.Context, signal string) string {
 	value := SignalConfigFile.Mapping[signal].SignalValue
+
+	if SignalConfigFile.Mapping[signal].HighLow {
+		return "1"
+	}
 
 	if SignalConfigFile.Mapping[signal].Parameterized {
 		value = context.Param(SignalConfigFile.Mapping[signal].SignalValue)

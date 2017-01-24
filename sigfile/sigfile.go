@@ -73,7 +73,7 @@ func Read(address string) ([]byte, error) {
 
 		if err != nil {
 			log.Printf("Error: %v", err.Error())
-
+			return []byte{}, err
 		}
 	}
 
@@ -91,6 +91,15 @@ func Read(address string) ([]byte, error) {
 		}
 	} else { // we need to check the mod time.
 		if time.Now().Sub(info[0].ModTime()) > refreshRate { // it's been too long, go get it.
+
+			//first remove the old file
+			err = os.Remove(sigDirectory + address + "/" + info[0].Name())
+			if err != nil {
+				log.Printf("Error deleting old sig file. ERROR: %v", err.Error())
+				return []byte{}, err
+			}
+
+			//fetch the new one
 			addr, err = Fetch(address)
 			if err != nil {
 				return []byte{}, err
