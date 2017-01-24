@@ -161,7 +161,7 @@ func Decode(sigfile []byte) (map[string]Signal, error) {
 
 //Fetch retrieves a sig file fromthe crestron dump
 func Fetch(address string) (string, error) {
-	log.Pritnf("Fetching the sig file for %v", address)
+	log.Printf("Fetching the sig file for %v", address)
 
 	connection, err := telnet.Dial("tcp", address+":41795")
 	if err != nil {
