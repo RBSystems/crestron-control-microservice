@@ -253,7 +253,7 @@ func Fetch(address string) (string, error) {
 
 	timestamp := time.Now().Format(time.RFC3339) // The timestamp that acts as the filename
 
-	outfile, er := os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+	outfile, er := os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, 0777)
 	if er != nil {
 		return "", err
 	}
