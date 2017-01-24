@@ -12,6 +12,7 @@ import (
 )
 
 //PowerOn handles the power on command.
+//TODO: Figure out how to better format this. It's a mess.
 func PowerOn(context echo.Context) error {
 	log.Printf("Powering on %s...", context.Param("address"))
 
@@ -46,7 +47,7 @@ func PowerOn(context echo.Context) error {
 	}
 
 	if config.HighLow {
-		err = helpers.SetState(allSignals["PowerOn"].MemAddr, "0", context.Param("address"))
+		err = helpers.SetState(signal.MemAddr, "0", context.Param("address"))
 
 		if err != nil {
 			log.Printf("ERROR: %v", err.Error())
