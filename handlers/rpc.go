@@ -16,7 +16,8 @@ func PowerOn(context echo.Context) error {
 
 	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
 	if err != nil {
-		return err
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 	}
 
 	value := crestroncontrol.GetSignalConfigValue(context, "PowerOn")
@@ -33,8 +34,8 @@ func PowerOn(context echo.Context) error {
 		err = helpers.SetState(allSignals["PowerOn"].MemAddr, "0", context.Param("address"))
 
 		if err != nil {
-			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
 			log.Printf("ERROR: %v", err.Error())
+			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
 		}
 	}
 
