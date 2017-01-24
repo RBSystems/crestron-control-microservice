@@ -25,6 +25,7 @@ func PowerOn(context echo.Context) error {
 
 	err = helpers.SetState(allSignals["PowerOn"].MemAddr, value, context.Param("address"))
 	if err != nil {
+		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 	}
 
@@ -33,6 +34,7 @@ func PowerOn(context echo.Context) error {
 
 		if err != nil {
 			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+			log.Printf("ERROR: %v", err.Error())
 		}
 	}
 
