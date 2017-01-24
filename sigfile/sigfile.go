@@ -212,19 +212,27 @@ func Fetch(address string) (string, error) {
 
 	log.Printf("Starting XMODEM receive")
 	response, err := xmodem.Receive(connection.Conn)
-	log.Printf("XMODEM receive done. ")
-
 	if err != nil {
 		return "", err
 	}
 
-	ioutil.WriteFile("./out-temp.zip", response, 0777)
-	r, err := zip.OpenReader("./out-temp.zip")
+	log.Printf("XMODEM receive done. ")
+
+	log.Printf("Preparing to unzip files.")
+	err = ioutil.WriteFile(sigDirectory+"out-temp.zip", response, 0777)
 	if err != nil {
+		log.Printf("Could not write temp zip file. ERROR: %v", err.Error())
+		return "", err
+	}
+
+	r, err := zip.OpenReader(sigDirectory + "out-temp.zip")
+	if err != nil {
+		log.Printf("error opening zip file for read: ERROR: %v", err.Error())
 		return "", err
 	}
 	defer r.Close()
 
+	log.Printf("Unzipping files.")
 	//Validate that the zig only has one file
 	if len(r.File) != 1 {
 		log.Printf("Zig had more than one file.")
@@ -253,6 +261,7 @@ func Fetch(address string) (string, error) {
 	}
 
 	rc.Close()
+	log.Printf("Extration and inflation done.")
 
 	return timestamp + ".sig", nil
 
