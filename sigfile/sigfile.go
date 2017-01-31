@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	xmodem "github.com/byuoitav/go-xmodem"
@@ -160,7 +161,7 @@ func Decode(sigfile []byte) (map[string]Signal, error) {
 
 		sig.Name = string(curBytes[:len(curBytes)-6])
 
-		toReturn[sig.Name] = sig
+		toReturn[strings.ToLower(sig.Name)] = sig
 
 		pos = pos + int(size)
 	}

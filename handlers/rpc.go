@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/byuoitav/crestron-control-microservice/crestroncontrol"
 	"github.com/byuoitav/crestron-control-microservice/helpers"
@@ -35,7 +36,7 @@ func HandleCommand(context echo.Context, commandName string) error {
 		var signal sigfile.Signal
 		var ok bool
 
-		if signal, ok = allSignals[state.SignalName]; !ok {
+		if signal, ok = allSignals[strings.ToLower(state.SignalName)]; !ok {
 			err = fmt.Errorf("no signal for %v defined in the signal file", state.SignalName)
 
 			log.Printf("ERROR: %v", err.Error())
@@ -66,8 +67,7 @@ func PowerOn(context echo.Context) error {
 func Standby(context echo.Context) error {
 	log.Printf("Powering off %s...", context.Param("address"))
 
-	log.Printf("Done")
-	return nil
+	return HandleCommand(context, "Standby")
 }
 
 //Update checks for a current Sig file for the device and updates it if necessary

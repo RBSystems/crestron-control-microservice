@@ -1,6 +1,6 @@
 {
 		"PowerOn": {
-			"signalName": "startup_press",
+			"signalName": "Startup_press",
 			"isUrlParameter": false,
 			"signalValueSequence": [{
 					"value": "1",
@@ -10,7 +10,7 @@
 					"isUrlParameter": false
 			}]
 		},
-    "PowerStandby": {
+    "Standby": {
         "signalName": "confirm_system_off",
         "isUrlParameter": false,
         "signalValueSequence": [{
