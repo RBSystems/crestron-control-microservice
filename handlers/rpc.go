@@ -67,6 +67,19 @@ func Standby(context echo.Context) error {
 	return nil
 }
 
+//Update checks for a current Sig file for the device and updates it if necessary
+func Update(context echo.Context) error {
+	log.Printf("Updating sig file for %s...", context.Param("address"))
+	_, err := sigfile.Read(context.Param("address"))
+
+	if err != nil {
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+	}
+
+	return nil
+}
+
 //SwitchInput handles the SwitchInput command
 func SwitchInput(context echo.Context) error {
 	log.Printf("Switching input for %s to %s ...", context.Param("address"), context.Param("port"))
