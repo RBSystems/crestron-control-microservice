@@ -67,7 +67,7 @@ func Update(context echo.Context) error {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
 	}
-
+	log.Printf("Done.")
 	return nil
 }
 
