@@ -11,22 +11,27 @@ import (
 	"github.com/labstack/echo"
 )
 
-//PowerOn handles the power on command.
-//TODO: Figure out how to better format this. It's a mess.
-func PowerOn(context echo.Context) error {
-	log.Printf("Powering on %s...", context.Param("address"))
+func HandleCommand(context echo.Context, commandName string) error {
 
 	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
+
 	if err != nil {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 	}
 
+	log.Printf("Getting the signal sequence.")
 	//Get the signal value
-	values := crestroncontrol.GetSignalConfigSequence(context, "PowerOn")
+	values, err := crestroncontrol.GetSignalConfigSequence(context, commandName)
+	if err != nil {
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+	}
+	log.Printf("%v steps.", len(values))
 
 	//Run through our signal sequence
 	for _, state := range values {
+		log.Printf("Preparing to set %v to %v", state.SignalName, state.Value)
 		var signal sigfile.Signal
 		var ok bool
 
@@ -48,6 +53,13 @@ func PowerOn(context echo.Context) error {
 
 	log.Printf("Done")
 	return nil
+}
+
+//PowerOn handles the power on command.
+func PowerOn(context echo.Context) error {
+	log.Printf("Powering on %s...", context.Param("address"))
+
+	return HandleCommand(context, "PowerOn")
 }
 
 //Standby handles the standby command

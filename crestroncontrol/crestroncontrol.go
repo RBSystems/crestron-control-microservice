@@ -2,7 +2,10 @@ package crestroncontrol
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/labstack/echo"
@@ -27,11 +30,16 @@ func ParseConfig() (map[string]SignalConfig, error) {
 //GetSignalConfigSequence needs to handle if we need to paramterize the
 //signal name, as well as the value.
 //returns a map of signalName -> value
-func GetSignalConfigSequence(context echo.Context, command string) []SignalState {
+func GetSignalConfigSequence(context echo.Context, command string) ([]SignalState, error) {
 	toReturn := []SignalState{}
 
 	//get the SignalConfig
-	config := SignalConfigFile[command]
+	config, ok := SignalConfigFile[command]
+	if !ok {
+		errorString := fmt.Sprintf("ERROR: No entry in config file for %v.", command)
+		log.Printf(errorString)
+		return toReturn, errors.New(errorString)
+	}
 
 	//Get the signal name, if parameterized, pull from the context.
 	var signalName string
@@ -55,6 +63,6 @@ func GetSignalConfigSequence(context echo.Context, command string) []SignalState
 			})
 		}
 	}
-	return toReturn
+	return toReturn, nil
 
 }
