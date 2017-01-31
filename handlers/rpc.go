@@ -23,35 +23,26 @@ func PowerOn(context echo.Context) error {
 	}
 
 	//Get the signal value
-	value := crestroncontrol.GetSignalConfigValue(context, "PowerOn")
+	values := crestroncontrol.GetSignalConfigSequence(context, "PowerOn")
 
-	//Get Config object
-	config := crestroncontrol.SignalConfigFile.Mapping["PowerOn"]
+	//Run through our signal sequence
+	for _, state := range values {
+		var signal sigfile.Signal
+		var ok bool
 
-	var signal sigfile.Signal
-	var ok bool
+		if signal, ok = allSignals[state.SignalName]; !ok {
+			err = fmt.Errorf("no signal for %v defined in the signal file", state.SignalName)
 
-	if signal, ok = allSignals[config.SignalName]; !ok {
-		err = fmt.Errorf("no signal for %v defined in the signal file", config.SignalName)
+			log.Printf("ERROR: %v", err.Error())
+			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+		}
 
-		log.Printf("ERROR: %v", err.Error())
-		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
-	}
-
-	//set the state with the memory address from the config name.
-	err = helpers.SetState(signal.MemAddr, value, context.Param("address"))
-
-	if err != nil {
-		log.Printf("ERROR: %v", err.Error())
-		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
-	}
-
-	if config.HighLow {
-		err = helpers.SetState(signal.MemAddr, "0", context.Param("address"))
+		//set the state with the memory address from the config name.
+		err = helpers.SetState(signal.MemAddr, state.Value, context.Param("address"))
 
 		if err != nil {
 			log.Printf("ERROR: %v", err.Error())
-			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+			return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 		}
 	}
 
