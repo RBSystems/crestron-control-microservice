@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/byuoitav/crestron-control-microservice/crestroncontrol"
 	"github.com/byuoitav/crestron-control-microservice/helpers"
@@ -36,7 +35,7 @@ func HandleCommand(context echo.Context, commandName string) error {
 		var signal sigfile.Signal
 		var ok bool
 
-		if signal, ok = allSignals[strings.ToLower(state.SignalName)]; !ok {
+		if signal, ok = allSignals[state.SignalName]; !ok {
 			err = fmt.Errorf("no signal for %v defined in the signal file", state.SignalName)
 
 			log.Printf("ERROR: %v", err.Error())

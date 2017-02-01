@@ -248,7 +248,7 @@ func Decode(sigfile []byte) (map[string]Signal, error) {
 
 		sig.Name = string(curBytes[:len(curBytes)-6])
 
-		toReturn[strings.ToLower(sig.Name)] = sig
+		toReturn[sig.Name] = sig
 
 		pos = pos + int(size)
 	}
