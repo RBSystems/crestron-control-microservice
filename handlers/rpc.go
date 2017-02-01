@@ -11,47 +11,43 @@ import (
 	"github.com/labstack/echo"
 )
 
-//PowerOn handles the power on command.
-//TODO: Figure out how to better format this. It's a mess.
-func PowerOn(context echo.Context) error {
-	log.Printf("Powering on %s...", context.Param("address"))
+func HandleCommand(context echo.Context, commandName string) error {
 
 	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
+
 	if err != nil {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 	}
 
+	log.Printf("Getting the signal sequence.")
 	//Get the signal value
-	value := crestroncontrol.GetSignalConfigValue(context, "PowerOn")
-
-	//Get Config object
-	config := crestroncontrol.SignalConfigFile.Mapping["PowerOn"]
-
-	var signal sigfile.Signal
-	var ok bool
-
-	if signal, ok = allSignals[config.SignalName]; !ok {
-		err = fmt.Errorf("no signal for %v defined in the signal file", config.SignalName)
-
+	values, err := crestroncontrol.GetSignalConfigSequence(context, commandName)
+	if err != nil {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
 	}
+	log.Printf("%v steps.", len(values))
 
-	//set the state with the memory address from the config name.
-	err = helpers.SetState(signal.MemAddr, value, context.Param("address"))
+	//Run through our signal sequence
+	for _, state := range values {
+		log.Printf("Preparing to set %v to %v", state.SignalName, state.Value)
+		var signal sigfile.Signal
+		var ok bool
 
-	if err != nil {
-		log.Printf("ERROR: %v", err.Error())
-		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
-	}
+		if signal, ok = allSignals[state.SignalName]; !ok {
+			err = fmt.Errorf("no signal for %v defined in the signal file", state.SignalName)
 
-	if config.HighLow {
-		err = helpers.SetState(signal.MemAddr, "0", context.Param("address"))
+			log.Printf("ERROR: %v", err.Error())
+			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+		}
+
+		//set the state with the memory address from the config name.
+		err = helpers.SetState(signal.MemAddr, state.Value, context.Param("address"))
 
 		if err != nil {
 			log.Printf("ERROR: %v", err.Error())
-			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+			return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
 		}
 	}
 
@@ -59,11 +55,30 @@ func PowerOn(context echo.Context) error {
 	return nil
 }
 
+//PowerOn handles the power on command.
+func PowerOn(context echo.Context) error {
+	log.Printf("Powering on %s...", context.Param("address"))
+
+	return HandleCommand(context, "PowerOn")
+}
+
 //Standby handles the standby command
 func Standby(context echo.Context) error {
 	log.Printf("Powering off %s...", context.Param("address"))
 
-	log.Printf("Done")
+	return HandleCommand(context, "Standby")
+}
+
+//Update checks for a current Sig file for the device and updates it if necessary
+func Update(context echo.Context) error {
+	log.Printf("Updating sig file for %s...", context.Param("address"))
+	_, err := sigfile.Read(context.Param("address"))
+
+	if err != nil {
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+	}
+	log.Printf("Done.")
 	return nil
 }
 

@@ -2,40 +2,67 @@ package crestroncontrol
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/labstack/echo"
 )
 
 //SignalConfigFile maps signal names to their operations.
-var SignalConfigFile AllSignalConfig
+var SignalConfigFile map[string]SignalConfig
 
 //ParseConfig gets the config file and reads it into the struct
-func ParseConfig() (AllSignalConfig, error) {
-	config := AllSignalConfig{}
+func ParseConfig() (map[string]SignalConfig, error) {
+	config := make(map[string]SignalConfig)
 
 	bytes, err := ioutil.ReadFile(os.Getenv("GOPATH") + "/src/github.com/byuoitav/crestron-control-microservice/signal-configuration.json")
 	if err != nil {
-		return AllSignalConfig{}, err
+		return config, err
 	}
 
 	err = json.Unmarshal(bytes, &config)
 	return config, err
 }
 
-//GetSignalConfigValue needs to handle if we need to paramterize the
+//GetSignalConfigSequence needs to handle if we need to paramterize the
 //signal name, as well as the value.
-func GetSignalConfigValue(context echo.Context, signal string) string {
-	value := SignalConfigFile.Mapping[signal].SignalValue
+//returns a map of signalName -> value
+func GetSignalConfigSequence(context echo.Context, command string) ([]SignalState, error) {
+	toReturn := []SignalState{}
 
-	if SignalConfigFile.Mapping[signal].HighLow {
-		return "1"
+	//get the SignalConfig
+	config, ok := SignalConfigFile[command]
+	if !ok {
+		errorString := fmt.Sprintf("ERROR: No entry in config file for %v.", command)
+		log.Printf(errorString)
+		return toReturn, errors.New(errorString)
 	}
 
-	if SignalConfigFile.Mapping[signal].Parameterized {
-		value = context.Param(SignalConfigFile.Mapping[signal].SignalValue)
+	//Get the signal name, if parameterized, pull from the context.
+	var signalName string
+	if config.IsURLParameter {
+		signalName = context.Param(config.SignalName)
+	} else {
+		signalName = config.SignalName
 	}
 
-	return value
+	//Build our progression.
+	for _, value := range config.SignalValueSequence {
+		if value.IsURLParameter {
+			toReturn = append(toReturn, SignalState{
+				SignalName: signalName,
+				Value:      context.Param(value.Value),
+			})
+		} else {
+			toReturn = append(toReturn, SignalState{
+				SignalName: signalName,
+				Value:      value.Value,
+			})
+		}
+	}
+	return toReturn, nil
+
 }

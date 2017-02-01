@@ -13,9 +13,8 @@ func TestDecodeSingle(t *testing.T) {
 		t.FailNow()
 	}
 
-	fmt.Printf("%S", bytes)
-
 	vals, err := Decode(bytes)
+	fmt.Printf("%s", vals)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()

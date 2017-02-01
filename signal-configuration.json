@@ -1,16 +1,40 @@
 {
-	"mapping": {
-		"SetVolume": {
-			"signalName": "setVolumeLevel",
-			"signalValue": "level",
-			"parameterizable": true,
-			"highLow": false
-		},
 		"PowerOn": {
 			"signalName": "Startup_press",
-			"signalValue": "",
-			"parameterizable": false,
-			"highLow": true
-		}
-	}
+			"isUrlParameter": false,
+			"signalValueSequence": [{
+					"value": "1",
+					"isUrlParameter": false
+			}, {
+					"value": "0",
+					"isUrlParameter": false
+			}]
+		},
+    "Standby": {
+        "signalName": "confirm_system_off",
+        "isUrlParameter": false,
+        "signalValueSequence": [{
+            "value": "1",
+            "isUrlParameter": false
+        }, {
+            "value": "0",
+            "isUrlParameter": false
+        }]
+    },
+    "ChangeInput": {
+        "signalName": "port",
+        "isUrlParameter": true,
+        "signalValueSequence": [{
+            "value": "1",
+            "isUrlParameter": false
+        }]
+    },
+    "SetVolume": {
+        "signalName": "system_volume_level",
+        "isUrlParameter": false,
+        "signalValueSequence": [{
+            "value": "level",
+            "isUrlParameter": true
+        }]
+    }
 }

@@ -45,6 +45,7 @@ func main() {
 	secure.GET("/:address/display/unblank", handlers.UnblankDisplay)
 	secure.GET("/:address/volume/get", handlers.GetVolume)
 
+	secure.GET("/:address/sig/update", handlers.Update)
 	server := http.Server{
 		Addr:           port,
 		MaxHeaderBytes: 1024 * 10,

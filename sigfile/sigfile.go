@@ -3,12 +3,15 @@ package sigfile
 import (
 	"archive/zip"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	xmodem "github.com/byuoitav/go-xmodem"
@@ -20,6 +23,11 @@ type Signal struct {
 	Name    string
 	MemAddr uint32
 	SigType []byte
+}
+
+//Log will correspond to the log of when we last checked for the latest programming.
+type Log struct {
+	Log map[string]time.Time
 }
 
 var sigDirectory = "/tmp/sigfiles/"
@@ -40,6 +48,55 @@ func GetSignalsForAddress(address string) (map[string]Signal, error) {
 	return toReturn, err
 }
 
+func getLog() (Log, error) {
+	var l Log
+	l.Log = make(map[string]time.Time)
+
+	logBytes, err := ioutil.ReadFile(sigDirectory + "log.json")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			//some other error.
+			return l, err
+		}
+		log.Printf("Log file does not exist, creating.")
+
+		err = os.MkdirAll(sigDirectory, 0777)
+		if err != nil {
+			return l, err
+		}
+		_, err = os.Create(sigDirectory + "log.json")
+		if err != nil {
+			log.Printf("Problem creating the file %s", err.Error())
+			return Log{}, err
+		}
+		return l, nil
+	}
+
+	if len(logBytes) == 0 {
+		return l, nil
+	}
+
+	err = json.Unmarshal(logBytes, &l)
+	if err != nil {
+		return l, err
+	}
+
+	return l, nil
+}
+
+//This might be an issue if we're writing to the log fairly often.
+func writeLog(l Log) error {
+	b, err := json.Marshal(l)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(sigDirectory+"log.json", b, 0777)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 /*
 Read checks for a current sig file for the address provided, if none is present,
 calls Fetch(). Reads and returns the bytes of the current sig file.
@@ -50,64 +107,92 @@ returned.
 func Read(address string) ([]byte, error) {
 	log.Printf("Checking for a current sig file for %v...", address)
 
-	//Check the sig file present.
-	info, err := ioutil.ReadDir(sigDirectory + address)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			//some other error.
-			return []byte{}, err
-		}
-		log.Printf("Directory for %v, did not exist, creating directory...", address)
+	//Check our log to see if we've checked it within the timeframe.
+	l, er := getLog()
 
-		//the directory didn't exist, we need to create it, then go get the file.
-		err = os.MkdirAll(sigDirectory+address, 0777)
-		if err != nil {
-			log.Printf("Error creating directory. ERROR: %v", err.Error())
-			return []byte{}, err
-		}
-		log.Printf("Directory created.")
-
-		//Do we need to get the info again to continue in flow below.
-		//If not, remove below section.
-		info, err = ioutil.ReadDir(sigDirectory + address)
-
-		if err != nil {
-			log.Printf("Error: %v", err.Error())
-			return []byte{}, err
-		}
+	if er != nil {
+		return []byte{}, er
 	}
-
-	//There should only be one file
-	if len(info) > 1 {
-		return []byte{}, errors.New("the sig file directory for " + address + " is malformed. Only one file is permitted in the directory.")
-	}
-
 	addr := ""
-	//No files, go get it.
-	if len(info) == 0 {
+
+	//check the log file for the address
+	if date, ok := l.Log[address]; ok {
+		if time.Now().Sub(date) > refreshRate {
+			//we need to go check for it.
+
+			info, err := getSingleFileFromDirectory(sigDirectory + address)
+			if err != nil {
+				return []byte{}, err
+			}
+
+			//No files, go get it.
+			if info == nil {
+				addr, err = Fetch(address)
+				if err != nil {
+					return []byte{}, err
+				}
+			} else { // we need to check the mod time.
+				t, err := GetCompileTime(address)
+				if err != nil {
+					return []byte{}, err
+				}
+
+				fileTime, err := time.Parse(time.RFC3339, strings.Split(info.Name(), ".sig")[0])
+				if err != nil {
+					return []byte{}, err
+				}
+
+				if t.Sub(fileTime) != 0 { // compile times don't match
+
+					//first remove the old file
+					err = os.Remove(sigDirectory + address + "/" + info.Name())
+					if err != nil {
+						log.Printf("Error deleting old sig file. ERROR: %v", err.Error())
+						return []byte{}, err
+					}
+
+					//fetch the new one
+					addr, err = Fetch(address)
+					fmt.Printf("Addr0: %v\n", addr)
+					if err != nil {
+						return []byte{}, err
+					}
+
+					//Mark the last time we checked.
+					l.Log[address] = time.Now()
+				} else {
+
+					addr = info.Name()
+					fmt.Printf("Addr1: %v\n", addr)
+					//Mark the last time we checked.
+					l.Log[address] = time.Now()
+				}
+			}
+		} else { //the file exists, and is within the refresh rate. Get the name of it so we can retrieve it below.
+
+			singleInfo, err := getSingleFileFromDirectory(sigDirectory + address)
+			if err != nil {
+				return []byte{}, err
+			}
+			addr = singleInfo.Name()
+
+			l.Log[address] = time.Now()
+		}
+	} else { //There isn't an entry for this address in the logging map, therefore we need to go get it and add a directory.
+		var err error
+		//not there, we need to go get it.
 		addr, err = Fetch(address)
 		if err != nil {
 			return []byte{}, err
 		}
-	} else { // we need to check the mod time.
-		if time.Now().Sub(info[0].ModTime()) > refreshRate { // it's been too long, go get it.
 
-			//first remove the old file
-			err = os.Remove(sigDirectory + address + "/" + info[0].Name())
-			if err != nil {
-				log.Printf("Error deleting old sig file. ERROR: %v", err.Error())
-				return []byte{}, err
-			}
-
-			//fetch the new one
-			addr, err = Fetch(address)
-			if err != nil {
-				return []byte{}, err
-			}
-		} else {
-			addr = info[0].Name()
-		}
+		fmt.Printf("Addr2: %v\n", addr)
+		l.Log[address] = time.Now()
+		//add the entry to the log
 	}
+
+	fmt.Printf("Addr3: %v\n", addr)
+
 	log.Printf("Reading sig file from time %v...", addr)
 	//go read addr, return the bytes
 	bytes, err := ioutil.ReadFile(sigDirectory + address + "/" + addr)
@@ -115,6 +200,9 @@ func Read(address string) ([]byte, error) {
 		return []byte{}, err
 	}
 	log.Printf("Done.")
+
+	//save out the log file
+	writeLog(l)
 	return bytes, err
 }
 
@@ -181,21 +269,20 @@ func Fetch(address string) (string, error) {
 	connection.SetUnixWriteMode(true)
 
 	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
+
 	//look for prompt
-	output, err := connection.ReadUntil(">")
+	err = sendNewlineWaitForPrompt(connection)
 	if err != nil {
 		return "", err
 	}
-	log.Printf("%s", output)
 
-	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	_, err = connection.Write([]byte("\n"))
+	compileTime, err := getCompileTimeFromConnection(connection)
 	if err != nil {
 		return "", err
 	}
 
 	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
-	output, err = connection.ReadUntil(">")
+	output, err := connection.ReadUntil(">")
 	if err != nil {
 		return "", err
 	}
@@ -211,7 +298,11 @@ func Fetch(address string) (string, error) {
 	log.Print("Read in progress")
 
 	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
-	connection.ReadUntil("DMPS-300-C", "FILE")
+	output, err = connection.ReadUntil("DMPS-300-C", "FILE")
+	if err != nil {
+		return "", err
+	}
+	log.Printf("%v", output)
 
 	time.Sleep(2 * time.Second)
 
@@ -255,16 +346,31 @@ func Fetch(address string) (string, error) {
 	f := r.File[0]
 	log.Printf("Writing %s", f.Name)
 	rc, err := f.Open()
+	defer rc.Close()
 
 	if err != nil {
 		return "", err
 	}
 
-	timestamp := time.Now().Format(time.RFC3339) // The timestamp that acts as the filename
+	timestamp := compileTime.Format(time.RFC3339) // The timestamp that acts as the filename
 
-	outfile, er := os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, 0777)
-	if er != nil {
-		return "", err
+	//Open the file.
+	outfile, err := os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil { //if we get a ISNotExist error that means the directory doesn't exist, we need to create it.
+		if !os.IsNotExist(err) {
+			//some other error.
+			return "", err
+		}
+		log.Printf("Directory %v does not exists, creating.", sigDirectory+address)
+
+		err = os.MkdirAll(sigDirectory+address, 0777) //Try creating the directory.
+		if err != nil {
+			return "", err
+		}
+		outfile, err = os.OpenFile(sigDirectory+address+"/"+timestamp+".sig", os.O_CREATE|os.O_WRONLY, 0777) //try creating/opening the file again.
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = io.Copy(outfile, rc)
@@ -273,9 +379,55 @@ func Fetch(address string) (string, error) {
 		return "", err
 	}
 
-	rc.Close()
+	log.Printf("timestamp: %v", timestamp)
+
 	log.Printf("Extration and inflation done.")
 
 	return timestamp + ".sig", nil
 
+}
+
+func getCompileTimeFromConnection(connection *telnet.Conn) (time.Time, error) {
+	log.Printf("Getting the compile time...")
+
+	err := sendNewlineWaitForPrompt(connection)
+
+	connection.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	_, err = connection.Write([]byte("progcom\n"))
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	connection.SetReadDeadline(time.Now().Add(10 * time.Second))
+	output, err := connection.ReadUntil("Compiler Rev")
+	if err != nil {
+		return time.Time{}, err
+	}
+	//log.Printf("%s", output)
+
+	//find the line that says Compiled On: .....\n
+
+	regexString := `Compiled On: (.*)[\n\r]+`
+	regEx, _ := regexp.Compile(regexString)
+	dateString := strings.TrimSpace(string(regEx.FindSubmatch(output)[1]))
+
+	date, err := time.Parse("1/2/2006 3:04 PM", dateString)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	log.Printf("Compiled on %v.", date.Format(time.RFC3339))
+	return date, nil
+}
+
+func GetCompileTime(address string) (time.Time, error) {
+	log.Printf("Checking program compile time for %s", address)
+	connection, err := telnet.Dial("tcp", address+":41795")
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer connection.Close()
+	connection.SetUnixWriteMode(true)
+
+	return getCompileTimeFromConnection(connection)
 }
