@@ -55,6 +55,12 @@ func HandleCommand(context echo.Context, commandName string) error {
 	return nil
 }
 
+func Test(context echo.Context) error {
+	log.Printf("Testing...")
+
+	return HandleCommand(context, "Test")
+}
+
 //PowerOn handles the power on command.
 func PowerOn(context echo.Context) error {
 	log.Printf("Powering on %s...", context.Param("address"))
@@ -85,11 +91,10 @@ func Update(context echo.Context) error {
 //SwitchInput handles the SwitchInput command
 func SwitchInput(context echo.Context) error {
 	log.Printf("Switching input for %s to %s ...", context.Param("address"), context.Param("port"))
-	// address := context.Param("address")
-	// port := context.Param("port")
+	//address := context.Param("address")
+	//port := context.Param("port")
 
-	log.Printf("Done")
-	return nil
+	return HandleCommand(context, "ChangeInput")
 }
 
 //SetVolume handles the SetVolume command
@@ -99,8 +104,7 @@ func SetVolume(context echo.Context) error {
 
 	// log.Printf("Setting volume for %s to %v...", address, value)
 
-	log.Printf("Done")
-	return nil
+	return HandleCommand(context, "SetVolume")
 }
 
 //VolumeUnmute hanldes the unmute command

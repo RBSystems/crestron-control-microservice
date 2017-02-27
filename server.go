@@ -44,7 +44,7 @@ func main() {
 	secure.GET("/:address/display/blank", handlers.BlankDisplay)
 	secure.GET("/:address/display/unblank", handlers.UnblankDisplay)
 	secure.GET("/:address/volume/get", handlers.GetVolume)
-
+	secure.GET("/:address/test", handlers.Test)
 	secure.GET("/:address/sig/update", handlers.Update)
 	server := http.Server{
 		Addr:           port,
