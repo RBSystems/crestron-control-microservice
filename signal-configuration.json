@@ -1,40 +1,56 @@
 {
-		"PowerOn": {
-			"signalName": "Startup_press",
-			"isUrlParameter": false,
-			"signalValueSequence": [{
-					"value": "1",
-					"isUrlParameter": false
-			}, {
-					"value": "0",
-					"isUrlParameter": false
-			}]
-		},
-    "Standby": {
-        "signalName": "confirm_system_off",
-        "isUrlParameter": false,
-        "signalValueSequence": [{
-            "value": "1",
-            "isUrlParameter": false
-        }, {
-            "value": "0",
-            "isUrlParameter": false
-        }]
-    },
-    "ChangeInput": {
-        "signalName": "port",
-        "isUrlParameter": true,
-        "signalValueSequence": [{
-            "value": "1",
-            "isUrlParameter": false
-        }]
-    },
-    "SetVolume": {
-        "signalName": "system_volume_level",
-        "isUrlParameter": false,
-        "signalValueSequence": [{
-            "value": "level",
-            "isUrlParameter": true
-        }]
-    }
+"PowerOn": {
+	"signalName": "Startup_press",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+			"value": "1",
+			"isUrlParameter": false
+		}, {
+			"value": "0",
+			"isUrlParameter": false
+	}]
+},
+"Standby": {
+	"signalName": "confirm_system_off",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value": "1",
+		"isUrlParameter": false
+	}, {
+		"value": "0",
+		"isUrlParameter": false
+	}]
+},
+"ChangeInput": {
+	"signalName": "port",
+	"isUrlParameter": true,
+	"signalValueSequence": [{
+		"value": "1",
+		"isUrlParameter": false
+	},
+	{
+		"value": "0",
+		"isUrlParameter": false
+	}]
+},
+"SetVolume": {
+	"signalName": "TP1_Set_Program_Volume",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value": "value",
+		"isUrlParameter": true
+	}]
+	},
+"Test": {
+	"signalName": "Select_Local_Input",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value": "1",
+		"isUrlParameter": false
+	},
+	{
+		"value": "0",
+		"isUrlParameter": false
+	}]
+}
 }
