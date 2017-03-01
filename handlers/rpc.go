@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/byuoitav/crestron-control-microservice/crestroncontrol"
 	"github.com/byuoitav/crestron-control-microservice/helpers"
@@ -138,6 +139,36 @@ func UnblankDisplay(context echo.Context) error {
 func GetVolume(context echo.Context) error {
 	log.Printf("Getting volume for %s...", context.Param("address"))
 
-	log.Printf("Done")
-	return nil
+	config := crestroncontrol.SignalConfigFile["SetVolume"]
+
+	return GetSignalState(context, config.SignalName)
+}
+
+func GetSignalState(context echo.Context, signalName string) error {
+
+	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
+
+	if err != nil {
+		log.Printf("ERROR: %v", err.Error())
+		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
+	}
+
+	if sig, ok := allSignals[signalName]; ok {
+		response, err := helpers.QueryState(sig.MemAddr, context.Param("address"))
+
+		if err != nil {
+			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+		}
+
+		resp, err := strconv.Atoi(response)
+		if err != nil {
+			return context.JSON(http.StatusInternalServerError, helpers.ReturnError(err))
+		}
+
+		resp = resp * 100 / 65534
+
+		return context.JSON(http.StatusOK, resp)
+	}
+
+	return context.JSON(http.StatusBadRequest, "There was no signal defined for "+signalName+" In the sig file.")
 }
