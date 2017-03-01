@@ -11,10 +11,10 @@ import (
 	"github.com/labstack/echo"
 )
 
+//HandleCommand handles commands
 func HandleCommand(context echo.Context, commandName string) error {
 
 	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
-
 	if err != nil {
 		log.Printf("ERROR: %v", err.Error())
 		return context.JSON(http.StatusBadRequest, helpers.ReturnError(err))
@@ -51,10 +51,11 @@ func HandleCommand(context echo.Context, commandName string) error {
 		}
 	}
 
-	log.Printf("Done")
+	log.Printf("Done.")
 	return nil
 }
 
+// Test handles the test command
 func Test(context echo.Context) error {
 	log.Printf("Testing...")
 
@@ -109,19 +110,20 @@ func SetVolume(context echo.Context) error {
 
 //VolumeUnmute hanldes the unmute command
 func VolumeUnmute(context echo.Context) error {
-	// address := context.Param("address")
-	// log.Printf("Unmuting %s...", address)
 
-	log.Printf("Done")
-	return nil
+	log.Printf("Muting %s...", context.Param("address"))
+
+	return HandleCommand(context, "Program_Volume_Mute_Off_fb")
+
 }
 
 //VolumeMute handles the mute command
 func VolumeMute(context echo.Context) error {
+
 	log.Printf("Muting %s...", context.Param("address"))
 
-	log.Printf("Done")
-	return nil
+	return HandleCommand(context, "Program_Volume_Mute_On_fb")
+
 }
 
 //BlankDisplay handles the blank command

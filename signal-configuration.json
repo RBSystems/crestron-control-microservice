@@ -52,5 +52,21 @@
 		"value": "0",
 		"isUrlParameter": false
 	}]
+},
+"Mute": {
+	"signalName": "Program_Volume_Mute_On_fb",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value":"0",
+		"isUrlParameter": false
+	}]
+},
+"UnMute": {
+	"signalName": "Program_Volume_Mute_Off_fb",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value":"0",
+		"isUrlParameter": false
+		}]
 }
 }

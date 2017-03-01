@@ -44,7 +44,7 @@ func GetSignalsForAddress(address string) (map[string]Signal, error) {
 	}
 	toReturn, err := Decode(bytes)
 
-	log.Printf("done")
+	log.Printf("Done.")
 	return toReturn, err
 }
 
@@ -113,7 +113,7 @@ func Read(address string) ([]byte, error) {
 	if er != nil {
 		return []byte{}, er
 	}
-	addr := ""
+	var addr string
 
 	//check the log file for the address
 	if date, ok := l.Log[address]; ok {
