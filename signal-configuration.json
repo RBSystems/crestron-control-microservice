@@ -11,7 +11,7 @@
 	}]
 },
 "Standby": {
-	"signalName": "confirm_system_off",
+	"signalName": "Confirm_System_Off",
 	"isUrlParameter": false,
 	"signalValueSequence": [{
 		"value": "1",
