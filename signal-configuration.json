@@ -42,7 +42,7 @@
 	}]
 	},
 "Test": {
-	"signalName": "Select_Local_Input",
+	"signalName": "Program_Volume_Mute_Off",
 	"isUrlParameter": false,
 	"signalValueSequence": [{
 		"value": "1",
@@ -52,5 +52,18 @@
 		"value": "0",
 		"isUrlParameter": false
 	}]
+},
+"Mute": {
+	"signalName": "Program_Volume_Mute_On",
+	"isUrlParameter": false,
+	"signalValueSequence": [{
+		"value": "1",
+		"isUrlParameter": false
+	},
+	{
+		"value": "0",
+		"isUrlParameter": false
+	}]
+
 }
 }
