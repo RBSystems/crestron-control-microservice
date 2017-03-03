@@ -18,7 +18,13 @@ var SignalConfigFile map[string]SignalConfig
 func ParseConfig() (map[string]SignalConfig, error) {
 	config := make(map[string]SignalConfig)
 
-	bytes, err := ioutil.ReadFile(os.Getenv("GOPATH") + "/src/github.com/byuoitav/crestron-control-microservice/signal-configuration.json")
+	fileLocation := "/go/crestron-control-microservice" // the location of signal-configuration.json in the ARM Docker container
+
+	if len(os.Getenv("GOPATH")) > 0 {
+		fileLocation = os.Getenv("GOPATH") + "/src/github.com/byuoitav/crestron-control-microservice/signal-configuration.json" // for non-Pi deployment/development
+	}
+
+	bytes, err := ioutil.ReadFile(fileLocation)
 	if err != nil {
 		return config, err
 	}
