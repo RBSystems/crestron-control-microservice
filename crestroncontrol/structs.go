@@ -6,14 +6,16 @@ JSON Format of the file is as follows:
 
 {
     "PowerStandby": {
-        "signalName": "confirm_system_off",
-        "isUrlParameter": true,
-        "signalValueSequence": [{
-            "value": "1",
-            "isUrlParameter": false
+       "signalValueSequence": [{
+			"signalName": "confirm_system_off",
+			"isSignalUrlParameter": true,
+			"value": "1",
+			"isValueUrlParameter": false
         }, {
-            "value": "0",
-            "isUrlParameter": false
+			"signalName": "confirm_system_off",
+			"isSignalUrlParameter": true,
+			"value": "1",
+			"isValueUrlParameter": false
         }]
     },
     "ChangeInput": {
@@ -35,15 +37,15 @@ JSON Format of the file is as follows:
 }
 */
 type SignalConfig struct {
-	SignalName          string        `json:"signalName"`
-	IsURLParameter      bool          `json:"isUrlParameter"`
 	SignalValueSequence []SignalValue `json:"signalValueSequence"`
 }
 
 //SignalValue is the single value to set a signal to.
 type SignalValue struct {
-	Value          string `json:"value"`
-	IsURLParameter bool   `json:"isUrlParameter"`
+	SignalName           string `json:"signalName"`
+	IsSignalURLParameter bool   `json:"isSignalUrlParameter"`
+	Value                string `json:"value"`
+	IsValueURLParameter  bool   `json:"isValueUrlParameter"`
 }
 
 //SignalState represents a signal state.

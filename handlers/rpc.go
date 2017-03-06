@@ -110,19 +110,14 @@ func SetVolume(context echo.Context) error {
 
 //VolumeUnmute hanldes the unmute command
 func VolumeUnmute(context echo.Context) error {
-	// address := context.Param("address")
-	// log.Printf("Unmuting %s...", address)
-
-	log.Printf("Done")
-	return nil
+	log.Printf("Unmuting %s...", context.Param("address"))
+	return HandleCommand(context, "UnMute")
 }
 
 //VolumeMute handles the mute command
 func VolumeMute(context echo.Context) error {
 	log.Printf("Muting %s...", context.Param("address"))
-
-	log.Printf("Done")
-	return nil
+	return HandleCommand(context, "Mute")
 }
 
 //BlankDisplay handles the blank command
@@ -141,7 +136,7 @@ func GetVolume(context echo.Context) error {
 
 	config := crestroncontrol.SignalConfigFile["SetVolume"]
 
-	return GetSignalState(context, config.SignalName)
+	return GetSignalState(context, config.SignalValueSequence[0].SignalName)
 }
 
 func GetSignalState(context echo.Context, signalName string) error {

@@ -1,56 +1,98 @@
 {
 "PowerOn": {
-	"signalName": "Startup_press",
-	"isUrlParameter": false,
-	"signalValueSequence": [{
-			"value": "1",
-			"isUrlParameter": false
-		}, {
-			"value": "0",
-			"isUrlParameter": false
+"signalValueSequence": [{
+		"signalName": "Startup_press",
+		"isSignalUrlParameter": false,
+		"value": "1",
+		"isValueUrlParameter": false
+	}, {
+		"isSignalUrlParameter": false,
+		"signalName": "Startup_press",
+		"value": "0",
+		"isValueUrlParameter": false
 	}]
 },
 "Standby": {
-	"signalName": "confirm_system_off",
-	"isUrlParameter": false,
 	"signalValueSequence": [{
+		"signalName": "Confirm_System_Off",
+		"isSignalUrlParameter": false,
 		"value": "1",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
 	}, {
+		"signalName": "Confirm_System_Off",
+		"isSignalUrlParameter": false,
 		"value": "0",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
 	}]
 },
 "ChangeInput": {
-	"signalName": "port",
-	"isUrlParameter": true,
 	"signalValueSequence": [{
+		"signalName": "port",
+		"isSignalUrlParameter": true,
 		"value": "1",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
 	},
 	{
+		"signalName": "port",
+		"isSignalUrlParameter": true,
 		"value": "0",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
 	}]
 },
 "SetVolume": {
-	"signalName": "TP1_Set_Program_Volume",
-	"isUrlParameter": false,
 	"signalValueSequence": [{
+		"signalName": "TP1_Set_Program_Volume",
+		"isSignalUrlParameter": false,
 		"value": "value",
-		"isUrlParameter": true
+		"isValueUrlParameter": true
 	}]
-	},
+},
 "Test": {
-	"signalName": "Select_Local_Input",
-	"isUrlParameter": false,
 	"signalValueSequence": [{
+		"signalName": "Program_Volume_Mute_Off",
+		"isSignalUrlParameter": false,
 		"value": "1",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
 	},
 	{
+		"signalName": "Program_Volume_Mute_Off",
+		"isSignalUrlParameter": false,
 		"value": "0",
-		"isUrlParameter": false
+		"isValueUrlParameter": false
+	}]
+},
+"Mute": {
+	"signalValueSequence": [{
+		"signalName": "Program_Volume_Mute_Off",
+		"isSignalUrlParameter": false,
+		"value": "1",
+		"isValueUrlParameter": false
+	},{
+		"signalName": "Program_Volume_Mute_Off",
+		"isSignalUrlParameter": false,
+		"value": "0",
+		"isValueUrlParameter": false
+	},
+	{
+		"signalName": "Program_Volume_Mute_Toggle",
+		"isSignalUrlParameter": false,
+		"value": "1",
+		"isValueUrlParameter": false
+	},
+	{
+		"signalName": "Program_Volume_Mute_Toggle",
+		"isSignalUrlParameter": false,
+		"value": "0",
+		"isValueUrlParameter": false
+	}]
+
+},
+"UnMute": {
+	"signalValueSequence": [{
+		"signalName": "Program_Volume_Mute_Off",
+		"isSignalUrlParameter": false,
+		"value": "1",
+		"isValueUrlParameter": false
 	}]
 }
 }

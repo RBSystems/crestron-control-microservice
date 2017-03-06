@@ -38,8 +38,6 @@ func ParseConfig() (map[string]SignalConfig, error) {
 //returns a map of signalName -> value
 func GetSignalConfigSequence(context echo.Context, command string) ([]SignalState, error) {
 	toReturn := []SignalState{}
-
-	//get the SignalConfig
 	config, ok := SignalConfigFile[command]
 	if !ok {
 		errorString := fmt.Sprintf("ERROR: No entry in config file for %v.", command)
@@ -47,17 +45,17 @@ func GetSignalConfigSequence(context echo.Context, command string) ([]SignalStat
 		return toReturn, errors.New(errorString)
 	}
 
-	//Get the signal name, if parameterized, pull from the context.
-	var signalName string
-	if config.IsURLParameter {
-		signalName = context.Param(config.SignalName)
-	} else {
-		signalName = config.SignalName
-	}
-
 	//Build our progression.
 	for _, value := range config.SignalValueSequence {
-		if value.IsURLParameter {
+		//Get the signal name, if parameterized, pull from the context.
+		var signalName string
+		if value.IsSignalURLParameter {
+			signalName = context.Param(value.SignalName)
+		} else {
+			signalName = value.SignalName
+		}
+
+		if value.IsValueURLParameter {
 			toReturn = append(toReturn, SignalState{
 				SignalName: signalName,
 				Value:      context.Param(value.Value),
