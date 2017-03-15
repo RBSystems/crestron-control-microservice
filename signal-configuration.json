@@ -31,12 +31,12 @@
 		"isSignalUrlParameter": true,
 		"value": "1",
 		"isValueUrlParameter": false
-	}.{
+	},{
 		"signalName": "device",
 		"isSignalUrlParameter": true,
 		"value": "0",
 		"isValueUrlParameter": false
-	}.
+	},
 	{
 		"signalName": "port",
 		"isSignalUrlParameter": true,
