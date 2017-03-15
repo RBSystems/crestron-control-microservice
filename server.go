@@ -37,7 +37,7 @@ func main() {
 
 	secure.GET("/:address/power/on", handlers.PowerOn)
 	secure.GET("/:address/power/standby", handlers.Standby)
-	secure.GET("/:address/input/:port", handlers.SwitchInput)
+	secure.GET("/:address/input/:device/:port", handlers.SwitchInput)
 	secure.GET("/:address/volume/set/:value", handlers.SetVolume)
 	secure.GET("/:address/volume/mute", handlers.VolumeMute)
 	secure.GET("/:address/volume/unmute", handlers.VolumeUnmute)
