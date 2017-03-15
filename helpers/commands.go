@@ -3,7 +3,6 @@ package helpers
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -92,11 +91,11 @@ func SetState(sigNumber uint32, sigValue string, address string) error {
 
 	response, err := QueryState(sigNumber, address)
 	if err != nil {
-		return err
+		log.Printf("There was an error setting the state of %s", sigNumber)
 	}
 
 	if !strings.EqualFold(response, sigValue) {
-		return errors.New("failed to set value\n")
+		log.Printf("There was a problem setting the value. Value came back as %s, attempting to set to %s", response, sigValue)
 	}
 
 	return nil
@@ -147,6 +146,7 @@ func readUntil(connection *net.TCPConn, expression string) ([]byte, error) {
 		_, err := connection.Read(c)
 		if err != nil {
 			return []byte{}, err
+			log.Printf("Error: %s", err.Error())
 		}
 		toReturn = append(toReturn, c...)
 	}
