@@ -5,7 +5,7 @@
         "Key": ".dockercfg"
     },
     "Image": {
-        "Name": "byuoitav/crestron-control-microservice:<TAG>",
+        "Name": "byuoitav/crestron-control-microservice:latest",
         "Update": "true"
     },
     "Ports": [{
