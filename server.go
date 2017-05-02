@@ -43,9 +43,14 @@ func main() {
 	secure.GET("/:address/volume/unmute", handlers.VolumeUnmute)
 	secure.GET("/:address/display/blank", handlers.BlankDisplay)
 	secure.GET("/:address/display/unblank", handlers.UnblankDisplay)
-	secure.GET("/:address/volume/get", handlers.GetVolume)
 	secure.GET("/:address/test", handlers.Test)
 	secure.GET("/:address/sig/update", handlers.Update)
+
+	//Status endpoints
+	secure.GET("/:address/volume/level", handlers.GetVolume)
+	secure.GET("/:address/volume/mute/status", handlers.GetMute)
+	secure.GET("/:address/power/status", handlers.GetPower)
+
 	server := http.Server{
 		Addr:           port,
 		MaxHeaderBytes: 1024 * 10,

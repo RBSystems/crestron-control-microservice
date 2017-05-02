@@ -139,6 +139,22 @@ func GetVolume(context echo.Context) error {
 	return GetSignalState(context, config.SignalValueSequence[0].SignalName)
 }
 
+func GetMute(context echo.Context) error {
+	log.Printf("Getting mute state of %s...", context.Param("address"))
+
+	config := crestroncontrol.SignalConfigFile["Mute"]
+
+	return GetSignalState(context, config.SignalValueSequence[0].SignalName)
+}
+
+func GetPower(context echo.Context) error {
+	log.Printf("Getting power state of %s...", context.Param("address"))
+
+	config := crestroncontrol.SignalConfigFile["PowerOn"]
+
+	return GetSignalState(context, config.SignalValueSequence[0].SignalName)
+}
+
 func GetSignalState(context echo.Context, signalName string) error {
 
 	allSignals, err := sigfile.GetSignalsForAddress(context.Param("address"))
